@@ -1,25 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import os
-import sys
 import getopt
-from requests import get
-import subprocess
-import time
+import os
 import signal
+import subprocess
+import sys
+import time
+
+from requests import get
 from stem import Signal
 from stem.control import Controller
-from packaging import version
-
-VERSION = "3.1.1"
 
 IP_API = "https://api.ipify.org/?format=json"
 
-LATEST_RELEASE_API = "https://api.github.com/repos/SusmithKrishnan/torghost/releases/latest"
 
+class Bcolors:
 
-class bcolors:
+    def __init__(self):
+        pass
 
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -39,22 +38,22 @@ def t():
 
 
 def sigint_handler(signum, frame):
-    print("User interrupt ! shutting down")
+    print('User interrupt ! shutting down')
     stop_torghost()
 
 
 def logo():
-    print(bcolors.RED + bcolors.BOLD)
+    print(Bcolors.RED + Bcolors.BOLD)
     print("""
       _____           ____ _               _
      |_   _|__  _ __ / ___| |__   ___  ___| |_
        | |/ _ \| '__| |  _| '_ \ / _ \/ __| __|
        | | (_) | |  | |_| | | | | (_) \__ \ |_
        |_|\___/|_|   \____|_| |_|\___/|___/\__|
-	{V} - github.com/SusmithKrishnan/torghost
+	  github.com/Quintin2003/torghost2024
 
-    """.format(V=VERSION))
-    print(bcolors.ENDC)
+    """.format(LiteralString))
+    print(Bcolors.ENDC)
 
 
 def usage():
@@ -71,15 +70,18 @@ def usage():
     sys.exit()
 
 
+global ipTxt
+
+
 def ip():
     while True:
         try:
             jsonRes = get(IP_API).json()
-            ipTxt = jsonRes["ip"]
+            ip_txt = jsonRes["ip"]
         except:
             continue
         break
-    return ipTxt
+    return ip_txt
 
 
 def check_root():
@@ -116,23 +118,23 @@ def start_torghost():
         with open(Torrc, 'w') as myfile:
             print(t() + ' Writing torcc file ')
             myfile.write(TorrcCfgString)
-            print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+            print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     if resolvString in open(resolv).read():
         print(t() + ' DNS resolv.conf file already configured')
     else:
         with open(resolv, 'w') as myfile:
             print(t() + ' Configuring DNS resolv.conf file.. '),
             myfile.write(resolvString)
-            print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+            print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
 
     print(t() + ' Stopping tor service '),
     os.system('sudo systemctl stop tor')
     os.system('sudo fuser -k 9051/tcp > /dev/null 2>&1')
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Starting new tor daemon '),
     os.system('sudo -u debian-tor tor -f /etc/tor/torghostrc > /dev/null'
               )
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' setting up iptables rules'),
 
     iptables_rules = \
@@ -160,35 +162,25 @@ def start_torghost():
 	""" \
         % subprocess.getoutput('id -ur debian-tor')
 
-    os.system(iptables_rules)
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    os.system('iptables_rules')
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Fetching current IP...')
-    print(t() + ' CURRENT IP : ' + bcolors.GREEN + ip() + bcolors.ENDC)
+    print(t() + ' CURRENT IP : ' + Bcolors.GREEN + ip() + Bcolors.ENDC)
 
 
 def stop_torghost():
-    print(bcolors.RED + t() + 'STOPPING torghost' + bcolors.ENDC)
+    print(Bcolors.RED + t() + 'STOPPING torghost' + Bcolors.ENDC)
     print(t() + ' Flushing iptables, resetting to default'),
     os.system('mv /etc/resolv.conf.bak /etc/resolv.conf')
-    IpFlush = \
-        """
-	iptables -P INPUT ACCEPT
-	iptables -P FORWARD ACCEPT
-	iptables -P OUTPUT ACCEPT
-	iptables -t nat -F
-	iptables -t mangle -F
-	iptables -F
-	iptables -X
-	"""
-    os.system(IpFlush)
+    os.system('iptables --flush')
     os.system('sudo fuser -k 9051/tcp > /dev/null 2>&1')
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Restarting Network manager'),
     os.system('service network-manager restart')
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Fetching current IP...')
     time.sleep(3)
-    print(t() + ' CURRENT IP : ' + bcolors.GREEN + ip() + bcolors.ENDC)
+    print(t() + ' CURRENT IP : ' + Bcolors.GREEN + ip() + Bcolors.ENDC)
 
 
 def switch_tor():
@@ -198,46 +190,19 @@ def switch_tor():
     with Controller.from_port(port=9051) as controller:
         controller.authenticate()
         controller.signal(Signal.NEWNYM)
-    print(bcolors.GREEN + '[done]' + bcolors.ENDC)
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Fetching current IP...')
-    print(t() + ' CURRENT IP : ' + bcolors.GREEN + ip() + bcolors.ENDC)
-
-
-def check_update():
-    print(t() + ' Checking for update...')
-    jsonRes = get(LATEST_RELEASE_API).json()
-    newversion = jsonRes["tag_name"][1:]
-    print(newversion)
-    if version.parse(newversion) > version.parse(VERSION):
-        print(t() + bcolors.GREEN + ' New update available!' + bcolors.ENDC)
-        print(t() + ' Your current TorGhost version : ' + bcolors.GREEN + VERSION + bcolors.ENDC)
-        print(t() + ' Latest TorGhost version available : ' + bcolors.GREEN + newversion + bcolors.ENDC)
-        yes = {'yes', 'y', 'ye', ''}
-        no = {'no', 'n'}
-
-        choice = input(
-            bcolors.BOLD + "Would you like to download latest version and build from Git repo? [Y/n]" + bcolors.ENDC).lower()
-        if choice in yes:
-            os.system(
-                'cd /tmp && git clone  https://github.com/SusmithKrishnan/torghost')
-            os.system('cd /tmp/torghost && sudo ./build.sh')
-        elif choice in no:
-            print(t() + " Update aborted by user")
-        else:
-            print("Please respond with 'yes' or 'no'")
-    else:
-        print(t() + " Torghost is up to date!")
+    print(t() + ' CURRENT IP : ' + Bcolors.GREEN + ip() + Bcolors.ENDC)
 
 
 def main():
     check_root()
     if len(sys.argv) <= 1:
-        check_update()
         usage()
     try:
         (opts, args) = getopt.getopt(sys.argv[1:], 'srxhu', [
             'start', 'stop', 'switch', 'help', 'update'])
-    except (getopt.GetoptError):
+    except getopt.GetoptError:
         usage()
         sys.exit(2)
     for (o, a) in opts:
