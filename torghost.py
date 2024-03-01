@@ -7,12 +7,8 @@ import signal
 import subprocess
 import sys
 import time
-
-from requests import get
 from stem import Signal
 from stem.control import Controller
-
-IP_API = "https://api.ipify.org/?format=json"
 
 
 class Bcolors:
@@ -69,18 +65,13 @@ def usage():
     sys.exit()
 
 
-global ipTxt
-
-
-def ip():
-    while True:
-        try:
-            jsonRes = get(IP_API).json()
-            ip_txt = jsonRes["ip"]
-        except:
-            continue
-        break
-    return ip_txt
+def ip(requests):
+    try:
+        response = requests.get('https://api.ipify.org?format=json')
+        ip_address = response.json()['ip']
+        return ip_address
+    except requests.RequestException:
+        return "Unable to get IP"
 
 
 def check_root():
@@ -107,6 +98,8 @@ Torrc = '/etc/tor/torghostrc'
 resolv = '/etc/resolv.conf'
 
 
+# code to define start function
+#
 def start_torghost():
     print(t() + ' lick on my balls')
     os.system('sudo cp /etc/resolv.conf /etc/resolv.conf.bak')
@@ -131,40 +124,46 @@ def start_torghost():
     os.system('sudo fuser -k 9051/tcp > /dev/null 2>&1')
     print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Starting new tor daemon '),
-    os.system('sudo -u debian-tor tor -f /etc/tor/torghostrc > /dev/null'
-              )
+    os.system('sudo -u debian-tor tor -f /etc/tor/torghostrc > /dev/null')
     print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' setting up iptables rules'),
 
-    iptables_rules = \
-        """
-	NON_TOR="192.168.1.0/24 192.168.0.0/24"
-	TOR_UID=%s
-	TRANS_PORT="9040"
+    # code to define the variable iptables_rules that runs
+    # the string of text in the terminal with a os.system command
+    # the variable iptables_rules is used in the start_torghost function
+    # to set up the iptables rules
+    iptables_rules = (''' 
+$NON_TOR='192.168.1.0/24 192.168.0.0/24'
+$TOR_UID=%s
+$TRANS_PORT='9040'
 
-	iptables -F
-	iptables -t nat -F
+iptables -F
+iptables -t nat -F
 
-	iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
-	iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 5353
-	for NET in $NON_TOR 127.0.0.0/9 127.128.0.0/10; do
-	 iptables -t nat -A OUTPUT -d $NET -j RETURN
-	done
-	iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT
+iptables -t nat -A OUTPUT -m owner --uid-owner $TOR_UID -j RETURN
+iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 5353
+for NET in $NON_TOR 127.0.0.0/9 127.128.0.0/10; do
+ iptables -t nat -A OUTPUT -d $NET -j RETURN
+done
+iptables -t nat -A OUTPUT -p tcp --syn -j REDIRECT --to-ports $TRANS_PORT
 
-	iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-	for NET in $NON_TOR 127.0.0.0/8; do
-	 iptables -A OUTPUT -d $NET -j ACCEPT
-	done
-	iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
-	iptables -A OUTPUT -j REJECT
-	""" \
-        % subprocess.getoutput('id -ur debian-tor')
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+for NET in $NON_TOR 127.0.0.0/8; do
+iptables -A OUTPUT -d $NET -j ACCEPT
+done
+iptables -A OUTPUT -m owner --uid-owner $TOR_UID -j ACCEPT
+iptables -A OUTPUT -j REJECT''') \
+                     % subprocess.getoutput('id -ur debian-tor')
 
-    os.system('iptables_rules')
+    os.system(f"echo \"{iptables_rules}\" | sudo bash")
+    print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
+    print(t() + ' Restarting Network manager'),
+    os.system('sudo systemctl restart network-manager')
     print(Bcolors.GREEN + '[done]' + Bcolors.ENDC)
     print(t() + ' Fetching current IP...')
-    print(t() + ' CURRENT IP : ' + Bcolors.GREEN + ip() + Bcolors.ENDC)
+    print(t() + ' CURRENT IP : ' + Bcolors.GREEN + ip + Bcolors.ENDC)
+    print(t() + ' Torghost started successfully')
+    print(t() + ' Now you can browse anonymously.')
 
 
 def stop_torghost():
