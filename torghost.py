@@ -64,7 +64,6 @@ def usage():
     -r    --switch      Request new tor exit node
     -x    --stop        Stop Torghost
     -h    --help        print(this help and exit)
-    -u    --update      check for update
 
     """)
     sys.exit()
@@ -109,7 +108,7 @@ resolv = '/etc/resolv.conf'
 
 
 def start_torghost():
-    print(t() + ' Always check for updates using -u option')
+    print(t() + ' lick on my balls')
     os.system('sudo cp /etc/resolv.conf /etc/resolv.conf.bak')
     if os.path.exists(Torrc) and TorrcCfgString in open(Torrc).read():
         print(t() + ' Torrc file already configured')
@@ -201,7 +200,7 @@ def main():
         usage()
     try:
         (opts, args) = getopt.getopt(sys.argv[1:], 'srxhu', [
-            'start', 'stop', 'switch', 'help', 'update'])
+            'start', 'stop', 'switch', 'help', ])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -214,8 +213,6 @@ def main():
             stop_torghost()
         elif o in ('-r', '--switch'):
             switch_tor()
-        elif o in ('-u', '--update'):
-            check_update()
         else:
             usage()
 
